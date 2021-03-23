@@ -8,18 +8,18 @@ use October\Rain\Database\Model;
 use October\Rain\Database\Relations\BelongsToMany;
 
 /**
- * @method BelongsToMany items()
+ * @method BelongsToMany acmes()
  */
-final class Acme extends Model
+final class Item extends Model
 {
-    public $table = 'vdlp_acme_acmes'; // Borging
+    public $table = 'vdlp_acme_items'; // Regels
 
     public $belongsToMany = [
-        'items' => [
-            Item::class,
+        'acmes' => [
+            Acme::class,
             'table' => 'vdlp_acme_acme_item',
-            'key' => 'acme_id',
-            'otherKey' => 'item_id',
+            'key' => 'item_id',
+            'otherKey' => 'acme_id',
             'pivot' => [
                 'name'
             ],
@@ -27,7 +27,7 @@ final class Acme extends Model
         ],
     ];
 
-    protected $primaryKey = 'acme_id';
+    protected $primaryKey = 'item_id';
 
     protected $guarded = [];
 }

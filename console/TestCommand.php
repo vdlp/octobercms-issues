@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Vdlp\Acme\Console;
 
+use Composer\Script\Event;
 use Illuminate\Console\Command;
-use System\Models\File;
+use Illuminate\Support\Facades\DB;
 use Vdlp\Acme\Models\Acme;
+use Vdlp\Acme\Models\Item;
 
 final class TestCommand extends Command
 {
@@ -20,47 +22,37 @@ final class TestCommand extends Command
 
     public function handle(): void
     {
-        $identifier = $this->createExample();
+        DB::connection()->enableQueryLog();
 
-        $this->loadExample($identifier);
-    }
-
-    private function createExample(): int
-    {
-        // Create a new Acme model
+        // Make sure all tables are truncated before we start the test.
+        Acme::query()->truncate();
+        Item::query()->truncate();
+        DB::table('vdlp_acme_acme_item');
 
         $acme = Acme::create([
-            'name' => 'my acme',
+            'acme_id' => 2,
+            'name' => 'Acme 2',
         ]);
 
-        // Create a new File model
+        $item = Item::create([
+            'item_id' => 4,
+            'name' => 'Item 4',
+        ]);
 
-        $file = new File();
-        $file->fromUrl('https://www.vdlp.nl/storage/app/media/technologie/letsmanage10.jpg', 'somefilename.jpg');
+        $acme->items()->add($item, [
+            'name' => 'Acme 2 - Item 4',
+        ]);
 
-        // Get the key
+        /*
+         * Results in a "integrity constrant violation"-error:
+         * SQLSTATE[23000]: Integrity constraint violation: 1052 Column 'item_id' in where clause is ambiguous
+         * (SQL: delete `vdlp_acme_acme_item` from `vdlp_acme_acme_item` inner join `vdlp_acme_items`
+         * on `vdlp_acme_items`.`item_id` = `vdlp_acme_acme_item`.`item_id` where `acme_id` = 2 and `item_id` in (4))
+         */
+        $acme->items()->detach(4);
 
-        var_dump($acme->getKey()); // This will output: int(1)
+        $queries = DB::getQueryLog();
 
-        // Attach the File model to Acme model
-
-        $acme->attachment()->add($file);
-
-        // Get the key
-
-        var_dump($acme->getKey()); // This will output: string(1) "1"
-
-        return (int) $acme->getKey();
-    }
-
-    private function loadExample(int $identifier): void
-    {
-        $newAcme = Acme::query()->findOrFail($identifier);
-
-        var_dump($newAcme->getKeyType()); // string(3) "int"
-
-        $newAcme->attachment;
-
-        var_dump($newAcme->getKeyType()); // string(6) "string"
+        dd($queries);
     }
 }
